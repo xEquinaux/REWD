@@ -229,6 +229,7 @@ namespace REWD.FoundationR
         REW solidColor;
         REW background;
         REW glass;
+        REW properties;
 
         public void RegisterHooks()
         {
@@ -256,6 +257,7 @@ namespace REWD.FoundationR
 
         protected void LoadResources()
         {
+            Asset.LoadFromFile(@".\Textures\properties.rew", out properties);
             Asset.LoadFromFile(@".\Textures\glass.rew", out glass);
             Asset.LoadFromFile(@".\Textures\sky_1280x1024.rew", out background);
             Asset.LoadFromFile(@".\Textures\bluepane.rew", out pane);
@@ -284,6 +286,7 @@ namespace REWD.FoundationR
             e.rewBatch.Draw(REW.Create(50, 50, Color.Gray, Ext.GetFormat(4)), 200, 0);
             e.rewBatch.Draw(REW.Create(50, 50, Color.Black, Ext.GetFormat(4)), 250, 0);
             e.rewBatch.Draw(pane, 0, 0);
+            e.rewBatch.Draw(properties, 200, 300);
             e.rewBatch.DrawString("Arial", "Test_value_01", 50, 50, 200, 100);
         }
 

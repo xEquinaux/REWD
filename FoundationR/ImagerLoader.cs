@@ -626,7 +626,7 @@ namespace REWD.FoundationR
 
 			result.Width = (short)bitmap.Width;
 			result.Height = (short)bitmap.Height;
-			result.data = new byte[bitmap.Width * bitmap.Height * result.NumChannels + headerOffset + 4];
+			result.data = new byte[bitmap.Width * bitmap.Height * result.NumChannels + headerOffset + 12];
 			result.data.AddHeader(new Point16(result.Width, result.Height), bitmap.Width * bitmap.Height * result.NumChannels + headerOffset, result.BitsPerPixel);
 
 			BitmapData data = bitmap.LockBits(new Rectangle(0, 0, bitmap.Width, bitmap.Height), ImageLockMode.ReadOnly, bmpf);
