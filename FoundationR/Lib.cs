@@ -283,6 +283,7 @@ namespace REWD.FoundationR
             e.rewBatch.Draw(REW.Create(50, 50, Color.Blue, Ext.GetFormat(4)), 150, 0);
             e.rewBatch.Draw(REW.Create(50, 50, Color.Gray, Ext.GetFormat(4)), 200, 0);
             e.rewBatch.Draw(REW.Create(50, 50, Color.Black, Ext.GetFormat(4)), 250, 0);
+            e.rewBatch.Draw(pane, 0, 0);
             e.rewBatch.DrawString("Arial", "Test_value_01", 50, 50, 200, 100);
         }
 

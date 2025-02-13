@@ -174,7 +174,7 @@ namespace REWD.FoundationR
 			Bitmap image = new Bitmap(width, height);
 			using (Graphics graphics = Graphics.FromImage(image))
 			{
-				graphics.TextRenderingHint = System.Drawing.Text.TextRenderingHint.AntiAliasGridFit;
+				graphics.TextRenderingHint = System.Drawing.Text.TextRenderingHint.AntiAlias;
 				Font _font = new Font("Arial", 12);
 				SolidBrush brush = new SolidBrush(Color.White);
 				PointF point = new PointF(10, 10);
@@ -626,7 +626,7 @@ namespace REWD.FoundationR
 
 			result.Width = (short)bitmap.Width;
 			result.Height = (short)bitmap.Height;
-			result.data = new byte[bitmap.Width * bitmap.Height * result.NumChannels + headerOffset];
+			result.data = new byte[bitmap.Width * bitmap.Height * result.NumChannels + headerOffset + 4];
 			result.data.AddHeader(new Point16(result.Width, result.Height), bitmap.Width * bitmap.Height * result.NumChannels + headerOffset, result.BitsPerPixel);
 
 			BitmapData data = bitmap.LockBits(new Rectangle(0, 0, bitmap.Width, bitmap.Height), ImageLockMode.ReadOnly, bmpf);
