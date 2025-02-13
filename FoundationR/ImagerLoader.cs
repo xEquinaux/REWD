@@ -183,6 +183,20 @@ namespace REWD.FoundationR
 				Draw(REW.Extract(image, 32), x, y);
 			}
 		}
+		public virtual void DrawString(string font, string text, int x, int y, int width, int height, Color color, float emSize)
+		{
+			Bitmap image = new Bitmap(width, height);
+			using (Graphics graphics = Graphics.FromImage(image))
+			{
+				graphics.TextRenderingHint = System.Drawing.Text.TextRenderingHint.AntiAlias;
+				Font _font = new Font("Arial", emSize);
+				SolidBrush brush = new SolidBrush(color);
+				PointF point = new PointF(10, 10);
+				graphics.DrawString(text, _font, brush, point);
+
+				Draw(REW.Extract(image, 32), x, y);
+			}
+		}
 
 		public void End()
 		{
