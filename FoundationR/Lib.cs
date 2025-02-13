@@ -79,21 +79,28 @@ namespace REWD.FoundationR
                         taskDone = false;
                         DrawTime = watch1.Elapsed;
                         watch1.Restart();
-                        //window.form?.Invoke(() =>
-                        //{
-                        //    InputEvent?.Invoke(new InputArgs() { mouse = window.form.PointToClient(System.Windows.Forms.Cursor.Position) });
-                        //});
-                        {
-                            InternalBegin(window);
-                            //if ((bool)ResizeEvent?.Invoke())
-                            //{
-                            //    _rewBatch = new RewBatch(width, height, window.BitsPerPixel);
-                            //}
-                            MainMenuEvent?.Invoke(new DrawingArgs() { rewBatch = _rewBatch });
-                            PreDrawEvent?.Invoke(new PreDrawArgs() { rewBatch = _rewBatch });
-                            DrawEvent?.Invoke(new DrawingArgs() { rewBatch = _rewBatch });
-                            CameraEvent?.Invoke(new CameraArgs() { rewBatch = _rewBatch, CAMERA = viewport, offX = offX, offY = offY, screen = bounds });
-                            InternalEnd();
+                        try
+                        { 
+                            window.form?.Invoke(() =>
+                            {
+                                InputEvent?.Invoke(new InputArgs() { mouse = window.form.PointToClient(System.Windows.Forms.Cursor.Position) });
+                            });
+                        }
+                        catch { }
+                        finally
+                        { 
+                            {
+                                InternalBegin(window);
+                                //if ((bool)ResizeEvent?.Invoke())
+                                //{
+                                //    _rewBatch = new RewBatch(width, height, window.BitsPerPixel);
+                                //}
+                                MainMenuEvent?.Invoke(new DrawingArgs() { rewBatch = _rewBatch });
+                                PreDrawEvent?.Invoke(new PreDrawArgs() { rewBatch = _rewBatch });
+                                DrawEvent?.Invoke(new DrawingArgs() { rewBatch = _rewBatch });
+                                CameraEvent?.Invoke(new CameraArgs() { rewBatch = _rewBatch, CAMERA = viewport, offX = offX, offY = offY, screen = bounds });
+                                InternalEnd();
+                            }
                         }
                         taskDone = true;
                     }
@@ -221,7 +228,7 @@ namespace REWD.FoundationR
         }
         #endregion
 
-        System.Drawing.Point mouse;
+        Point mouse;
         WindowUtils.RECT window_frame;
         REW pane;
         REW tile;
@@ -231,7 +238,7 @@ namespace REWD.FoundationR
         REW glass;
         REW properties;
 
-        public void RegisterHooks()
+        public virtual void RegisterHooks()
         {
             Foundation.UpdateEvent += Update;
             Foundation.InputEvent += Input;
@@ -243,19 +250,19 @@ namespace REWD.FoundationR
             Foundation.CameraEvent += Camera;
         }
 
-        protected void Camera(CameraArgs e)
+        protected virtual void Camera(CameraArgs e)
         {
         }
 
-        protected void PreDraw(PreDrawArgs e)
+        protected virtual void PreDraw(PreDrawArgs e)
         {
         }
 
-        protected void MainMenu(DrawingArgs e)
+        protected virtual void MainMenu(DrawingArgs e)
         {
         }
 
-        protected void LoadResources()
+        protected virtual void LoadResources()
         {
             Asset.LoadFromFile(@".\Textures\properties.rew", out properties);
             Asset.LoadFromFile(@".\Textures\glass.rew", out glass);
@@ -265,20 +272,20 @@ namespace REWD.FoundationR
             Asset.LoadFromFile(@".\Textures\cans.rew", out cans);
         }
 
-        protected void Initialize(InitializeArgs e)
+        protected virtual void Initialize(InitializeArgs e)
         {
         }
 
-        protected void Draw(DrawingArgs e)
+        protected virtual void Draw(DrawingArgs e)
         {
             e.rewBatch.Draw(background, 0, 0);
+            e.rewBatch.Draw(tile, mouse.X, mouse.Y);
             e.rewBatch.Draw(REW.Create(50, 50, Color.FromArgb(255, 255, 255, 255), Ext.GetFormat(4)), 0, 50);
             e.rewBatch.Draw(glass, 200, 200);
             e.rewBatch.Draw(glass, 400, 520);
             for (int i = 0; i < 10; i++)
                 for (int j = 0; j < 10; j++)
                     e.rewBatch.Draw(tile, i * 50, j * 50);
-            e.rewBatch.Draw(tile, mouse.X, mouse.Y);
             e.rewBatch.Draw(REW.Create(50, 50, Color.White, Ext.GetFormat(4)), 0, 0);
             e.rewBatch.Draw(REW.Create(50, 50, Color.Red, Ext.GetFormat(4)), 50, 0);
             e.rewBatch.Draw(REW.Create(50, 50, Color.Green, Ext.GetFormat(4)), 100, 0);
@@ -290,12 +297,12 @@ namespace REWD.FoundationR
             e.rewBatch.DrawString("Arial", "Test_value_01", 50, 50, 200, 100);
         }
 
-        protected void Input(InputArgs e)
+        protected virtual void Input(InputArgs e)
         {
             mouse = e.mouse;
         }
 
-        protected void Update(UpdateArgs e)
+        protected virtual void Update(UpdateArgs e)
         {
         }
     }

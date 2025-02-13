@@ -11,8 +11,11 @@ using Microsoft.Win32;
 
 namespace REWD.Foundation_GameTemplate
 {
-    public class Template
-    {
-        
-    }
+	public class Template : Foundation
+	{
+		public Template(int sx, int sy, int w, int y, string title, int bpp) : base(sx, sy, w, y, title, bpp)
+		{
+			Start(new Surface(sx, sy, w, y, title, bpp));
+		}
+	}
 }
