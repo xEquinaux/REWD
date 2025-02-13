@@ -13,7 +13,6 @@ namespace REWD
 	{
 		static void Main(string[] args)
 		{
-			new REWD.FoundationR.Converter().Show();
 			new Foundation(0, 0, 800, 600, "Demo", 32);
 		}
 	}

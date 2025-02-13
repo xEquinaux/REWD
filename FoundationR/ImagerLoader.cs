@@ -207,8 +207,11 @@ namespace REWD.FoundationR
 			oldBackBuffer = backBuffer;
 			backBuffer = null;
 		}
-		public virtual void CompositeImage(byte[] buffer, int bufferWidth, int bufferHeight, byte[] image, int imageWidth, int imageHeight, int x, int y, bool text = false)
+		public virtual void CompositeImage(byte[] buffer, int bufferWidth, int bufferHeight, byte[] image, int imageWidth, int imageHeight, int x, int y, bool text)
 		{
+			CompositeImage(buffer, bufferWidth, bufferHeight, image, imageWidth, imageHeight, x, y);
+			return;
+
 			Parallel.For(0, imageHeight, i =>
 			{
 				for (int j = 0; j < imageWidth; j++)
@@ -255,16 +258,39 @@ namespace REWD.FoundationR
 					float outB = (srcB * srcA) + (dstB * (1 - srcA));
 					float outA = srcA + (dstA * (1 - srcA));
 
-					buffer[bufferIndex] = (byte)(outR * 255);
+					buffer[bufferIndex] = (byte)(outB * 255);
 					buffer[bufferIndex + 1] = (byte)(outG * 255);
-					buffer[bufferIndex + 2] = (byte)(outB * 255);
+					buffer[bufferIndex + 2] = (byte)(outR * 255);
 					buffer[bufferIndex + 3] = (byte)(outA * 255);
 				}
 			});
 		}
+		void CompositeImage(byte[] buffer, int bufferWidth, int bufferHeight, byte[] image, int imageWidth, int imageHeight, int x, int y)
+        {
+            for (int i = 0; i < imageHeight; i++)
+            {
+                for (int j = 0; j < imageWidth; j++)
+                {
+                    int index = (i * imageWidth + j) * 4;
+                    int bufferIndex = ((y + i) * bufferWidth + (x + j)) * 4;
+
+                    if (bufferIndex >= buffer.Length)
+                        return;
+                    Pixel back = new Pixel(buffer[bufferIndex], buffer[bufferIndex + 1], buffer[bufferIndex + 2], buffer[bufferIndex + 3]);
+                    Pixel fore = new Pixel(image[Math.Min(index, image.Length - 1)], image[Math.Min(index + 1, image.Length - 1)], image[Math.Min(index + 2, image.Length - 1)], image[Math.Min(index + 3, image.Length - 1)]);
+
+                    fore.Composite(back);
+
+                    buffer[bufferIndex]     = fore.B;
+                    buffer[bufferIndex + 1] = fore.G;
+                    buffer[bufferIndex + 2] = fore.R;
+                    buffer[bufferIndex + 3] = fore.A;
+                }
+            }
+        }
 		public byte[] FlipVertically(byte[] pixels, int width, int height)
 		{
-			return pixels;
+			if (pixels.Length == 0) return pixels;
 			int bytesPerPixel = 4;
 			byte[] output = new byte[pixels.Length];
 
@@ -544,11 +570,11 @@ namespace REWD.FoundationR
 					Pixel pixel = default;
 					if (rew.NumChannels == 4)
 					{
-						pixel = new Pixel(color.R, color.G, color.B, color.A);
+						pixel = new Pixel(color.B, color.G, color.R, color.A);
 					}
 					else
 					{
-						pixel = new Pixel(color.R, color.G, color.B);
+						pixel = new Pixel(color.B, color.G, color.R);
 					}
 					rew.data.color_AppendPixel(num * rew.NumChannels + rew.HeaderOffset, pixel);
 					pixel = null;
@@ -571,11 +597,11 @@ namespace REWD.FoundationR
 					Pixel pixel = default;
 					if (NumChannels == 4)
 					{
-						pixel = new Pixel(c.R, c.G, c.B, c.A);
+						pixel = new Pixel(c.B, c.G, c.R, c.A);
 					}
 					else
 					{
-						pixel = new Pixel(c.R, c.G, c.B);
+						pixel = new Pixel(c.B, c.G, c.R);
 					}
 					data.AppendPixel(num * NumChannels + HeaderOffset, pixel);
 					pixel = null;
@@ -676,16 +702,16 @@ namespace REWD.FoundationR
 			}
 			if (NumChannels == 4)
 			{
-				data[Math.Min(data.Length - 1, whoAmI * 4 + HeaderOffset)] = color.R;
+				data[Math.Min(data.Length - 1, whoAmI * 4 + HeaderOffset)] = color.B;
 				data[Math.Min(data.Length - 1, whoAmI * 4 + HeaderOffset + 1)] = color.G;
-				data[Math.Min(data.Length - 1, whoAmI * 4 + HeaderOffset + 2)] = color.B;
+				data[Math.Min(data.Length - 1, whoAmI * 4 + HeaderOffset + 2)] = color.R;
 				data[Math.Min(data.Length - 1, whoAmI * 4 + HeaderOffset + 3)] = color.A;
 			}
 			else
 			{
-				data[Math.Min(data.Length - 1, whoAmI * 3 + HeaderOffset)] = color.R;
+				data[Math.Min(data.Length - 1, whoAmI * 3 + HeaderOffset)] = color.B;
 				data[Math.Min(data.Length - 1, whoAmI * 3 + HeaderOffset + 1)] = color.G;
-				data[Math.Min(data.Length - 1, whoAmI * 3 + HeaderOffset + 2)] = color.B;
+				data[Math.Min(data.Length - 1, whoAmI * 3 + HeaderOffset + 2)] = color.R;
 			}
 		}
 	}
@@ -748,11 +774,11 @@ namespace REWD.FoundationR
 			A = color.A; //B
 		}
 		public byte A = 255, R, G, B;
-		public virtual byte[] Buffer => hasAlpha ? new byte[] { R, G, B, A } : new byte[] { R, G, B };
-		public virtual Color color => Color.FromArgb(R, G, B, A);
+		public virtual byte[] Buffer => hasAlpha ? new byte[] { B, G, R, A } : new byte[] { B, G, R };
+		public virtual Color color => Color.FromArgb(B, G, R, A);
 		public override string ToString()
 		{
-			return $"\"RGBA=({R}, {G}, {B}, {A})\"";
+			return $"\"RGBA=({B}, {G}, {R}, {A})\"";
 		}
 	}
 	public struct Point16
@@ -829,16 +855,16 @@ namespace REWD.FoundationR
 		{
 			if (i.hasAlpha)
 			{
-				array[index] = i.R;
+				array[index] = i.B;
 				array[index + 1] = i.G;
-				array[index + 2] = i.B;
+				array[index + 2] = i.R;
 				array[index + 3] = i.A;
 			}
 			else
 			{
-				array[index] = i.R;
+				array[index] = i.B;
 				array[index + 1] = i.G;
-				array[index + 2] = i.B;
+				array[index + 2] = i.R;
 			}
 			return array;
 		}
@@ -846,16 +872,16 @@ namespace REWD.FoundationR
 		{
 			if (i.hasAlpha)
 			{
-				array[index] = i.R;
+				array[index] = i.B;
 				array[index + 1] = i.G;
-				array[index + 2] = i.B;
+				array[index + 2] = i.R;
 				array[index + 3] = i.A;
 			}
 			else
 			{
-				array[index] = i.R;
+				array[index] = i.B;
 				array[index + 1] = i.G;
-				array[index + 2] = i.B;
+				array[index + 2] = i.R;
 			}
 			return array;
 		}
@@ -948,15 +974,15 @@ namespace REWD.FoundationR
 			}
 			return output;
 		}
-		public static Pixel Composite(this Pixel one, Pixel two)
-		{
-			if (two.A < 255)
-			{
-				one.SetColor(two.color.Blend(one.color, 0.85d));
-			}
-			else one = two;
-			return one;
-		}
+		public static Pixel Composite(this Pixel back, Pixel fore)
+        {
+            if (fore.A < 255)
+            {
+                back.SetColor(back.color.Blend(fore.color, 0.5d));
+            }
+            else back = fore;
+            return back;
+        }
 		public static Pixel PreMultiply(this Pixel pixel)
 		{
 			byte r = pixel.R;
@@ -1128,7 +1154,7 @@ namespace REWD.FoundationR
 			byte r = (byte)(color.R * amount + foreColor.R * (1 - amount));
 			byte g = (byte)(color.G * amount + foreColor.G * (1 - amount));
 			byte b = (byte)(color.B * amount + foreColor.B * (1 - amount));
-			return Color.FromArgb(a, r, g, b);
+			return Color.FromArgb(b, g, r, a);
 		}
 		[Obsolete("Transforms the textures into something chaotic.")]
 		public static Color AlphaBlend(this Color argb, Color blend)

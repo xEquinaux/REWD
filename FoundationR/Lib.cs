@@ -227,6 +227,8 @@ namespace REWD.FoundationR
         REW tile;
         REW cans;
         REW solidColor;
+        REW background;
+        REW glass;
 
         public void RegisterHooks()
         {
@@ -254,6 +256,8 @@ namespace REWD.FoundationR
 
         protected void LoadResources()
         {
+            Asset.LoadFromFile(@".\Textures\glass.rew", out glass);
+            Asset.LoadFromFile(@".\Textures\sky_1280x1024.rew", out background);
             Asset.LoadFromFile(@".\Textures\bluepane.rew", out pane);
             Asset.LoadFromFile(@".\Textures\background.rew", out tile);
             Asset.LoadFromFile(@".\Textures\cans.rew", out cans);
@@ -265,9 +269,12 @@ namespace REWD.FoundationR
 
         protected void Draw(DrawingArgs e)
         {
-            for (int i = 0; i < 10; i++)
-                for (int j = 0; j < 10; j++)
-                    e.rewBatch.Draw(tile, i * 50, j * 50);
+            e.rewBatch.Draw(background, 0, 0);
+            e.rewBatch.Draw(REW.Create(50, 50, Color.FromArgb(100, 255, 255, 255), Ext.GetFormat(4)), 0, 50);
+            e.rewBatch.Draw(glass, 200, 200);                                       
+            //for (int i = 0; i < 10; i++)
+            //    for (int j = 0; j < 10; j++)
+            //        e.rewBatch.Draw(tile, i * 50, j * 50);
             e.rewBatch.Draw(tile, mouse.X, mouse.Y);
             e.rewBatch.Draw(REW.Create(50, 50, Color.White, Ext.GetFormat(4)), 0, 0);
             e.rewBatch.Draw(REW.Create(50, 50, Color.Red, Ext.GetFormat(4)), 50, 0);
