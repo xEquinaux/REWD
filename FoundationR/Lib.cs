@@ -270,11 +270,12 @@ namespace REWD.FoundationR
         protected void Draw(DrawingArgs e)
         {
             e.rewBatch.Draw(background, 0, 0);
-            e.rewBatch.Draw(REW.Create(50, 50, Color.FromArgb(100, 255, 255, 255), Ext.GetFormat(4)), 0, 50);
-            e.rewBatch.Draw(glass, 200, 200);                                       
-            //for (int i = 0; i < 10; i++)
-            //    for (int j = 0; j < 10; j++)
-            //        e.rewBatch.Draw(tile, i * 50, j * 50);
+            e.rewBatch.Draw(REW.Create(50, 50, Color.FromArgb(255, 255, 255, 255), Ext.GetFormat(4)), 0, 50);
+            e.rewBatch.Draw(glass, 200, 200);
+            e.rewBatch.Draw(glass, 400, 520);
+            for (int i = 0; i < 10; i++)
+                for (int j = 0; j < 10; j++)
+                    e.rewBatch.Draw(tile, i * 50, j * 50);
             e.rewBatch.Draw(tile, mouse.X, mouse.Y);
             e.rewBatch.Draw(REW.Create(50, 50, Color.White, Ext.GetFormat(4)), 0, 0);
             e.rewBatch.Draw(REW.Create(50, 50, Color.Red, Ext.GetFormat(4)), 50, 0);

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Diagnostics.Eventing.Reader;
+using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
 using System.Drawing.Text;
@@ -9,9 +10,11 @@ using System.Security.Policy;
 using System.Text;
 using System.Windows;
 using System.Windows.Forms;
+using System.Windows.Forms.Design.Behavior;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using static System.Net.Mime.MediaTypeNames;
+using static System.Windows.Forms.DataFormats;
 using Color = System.Drawing.Color;
 using Font = System.Drawing.Font;
 using MessageBox = System.Windows.Forms.MessageBox;
@@ -117,6 +120,9 @@ namespace REWD.FoundationR
 		static extern int SetDIBitsToDevice(IntPtr hdc, int xDest, int yDest, int w, int h, int xSrc, int ySrc, int startScan, int scanLines, byte[] bits, BitmapInfoHeader bmih, uint colorUse);
 		[DllImport("gdi32.dll")]
 		static extern IntPtr SelectObject(IntPtr hdc, IntPtr hbdiobj);
+		//https://stackoverflow.com/questions/16827121/c-sharp-copy-array-of-structures-as-bytes-using-marshal-copy
+		[DllImport("msvcrt.dll", CallingConvention = CallingConvention.Cdecl)]
+		static extern int memcpy(IntPtr dest, byte[] srce, int bytes);	
 
 		public virtual int stride => width * ((BitsPerPixel + 7) / 8);
 		internal static int width, height;
@@ -210,65 +216,53 @@ namespace REWD.FoundationR
 		public virtual void CompositeImage(byte[] buffer, int bufferWidth, int bufferHeight, byte[] image, int imageWidth, int imageHeight, int x, int y, bool text)
 		{
 			CompositeImage(buffer, bufferWidth, bufferHeight, image, imageWidth, imageHeight, x, y);
-			return;
+		}
+		Bitmap get_BitmapFromArray(byte[] buffer, int bufferWidth, int bufferHeight)
+		{
+			Bitmap _back = new Bitmap(bufferWidth, bufferHeight);
+			
+			System.Drawing.Imaging.PixelFormat bmpf = System.Drawing.Imaging.PixelFormat.Format32bppArgb;
+			
+			BitmapData data = _back.LockBits(new Rectangle(0, 0, bufferWidth, bufferHeight), ImageLockMode.ReadOnly, bmpf);
+			
+			//https://stackoverflow.com/questions/2185944/why-must-stride-in-the-system-drawing-bitmap-constructor-be-a-multiple-of-4
+			int bitsPerPixel = ((int)bmpf & 0xff00) >> 8;
+			int bytesPerPixel = (bitsPerPixel + 7) / 8;
+			int stride = 4 * ((width * bytesPerPixel + 3) / 4);
 
-			Parallel.For(0, imageHeight, i =>
-			{
-				for (int j = 0; j < imageWidth; j++)
-				{
-					if (j > bufferWidth)
-					{
-						return;
-					}
-					if (i > bufferHeight)
-					{
-						return;
-					}
-
-					int index = Math.Min((i * imageWidth + j) * 4, image.Length - 4);
-					int bufferIndex = ((y + i) * bufferWidth + (x + j)) * 4;
-
-					if (bufferIndex < 0 || bufferIndex >= buffer.Length - 4)
-						return;
-					Pixel back = new Pixel(
-						buffer[bufferIndex],
-						buffer[bufferIndex + 1],
-						buffer[bufferIndex + 2],
-						buffer[bufferIndex + 3]
-					);
-					Pixel fore = new Pixel(
-						image[index],
-						image[index + 1],
-						image[index + 2],
-						image[index + 3]
-					);
-
-					float srcR = fore.R / 255f;
-					float srcG = fore.G / 255f;
-					float srcB = fore.B / 255f;
-					float srcA = fore.A / 255f;
-
-					float dstR = back.R / 255f;
-					float dstG = back.G / 255f;
-					float dstB = back.B / 255f;
-					float dstA = back.A / 255f;
-
-					float outR = (srcR * srcA) + (dstR * (1 - srcA));
-					float outG = (srcG * srcA) + (dstG * (1 - srcA));
-					float outB = (srcB * srcA) + (dstB * (1 - srcA));
-					float outA = srcA + (dstA * (1 - srcA));
-
-					buffer[bufferIndex] = (byte)(outB * 255);
-					buffer[bufferIndex + 1] = (byte)(outG * 255);
-					buffer[bufferIndex + 2] = (byte)(outR * 255);
-					buffer[bufferIndex + 3] = (byte)(outA * 255);
-				}
-			});
+			// To calculate the scanline of a bitmap, you need to multiply the image
+			// width by the number of bytes per pixel, essentially finding the total
+			// number of bytes required to store a single horizontal line of pixels
+			// in the image;
+			int scanline = _back.Width * bmpf.BytesPerPixel();
+			IntPtr dest = new IntPtr((long)data.Scan0 + scanline * stride);
+			
+			memcpy(data.Scan0, buffer, buffer.Length);
+			_back.UnlockBits(data);
+			
+			return _back;
 		}
 		void CompositeImage(byte[] buffer, int bufferWidth, int bufferHeight, byte[] image, int imageWidth, int imageHeight, int x, int y)
         {
-            for (int i = 0; i < imageHeight; i++)
-            {
+			Bitmap _back = get_BitmapFromArray(buffer, bufferWidth, bufferHeight);
+			Bitmap _fore = get_BitmapFromArray(image, imageWidth, imageHeight);
+			
+			using (Graphics g = Graphics.FromImage(_back))
+			{
+				g.DrawImage(_fore, new PointF(x, y));
+			}
+
+			System.Drawing.Imaging.PixelFormat bmpf = System.Drawing.Imaging.PixelFormat.Format32bppArgb;
+			
+			BitmapData data = _back.LockBits(new Rectangle(0, 0, bufferWidth, bufferHeight), ImageLockMode.ReadOnly, bmpf);
+			Marshal.Copy(data.Scan0, buffer, 0, buffer.Length);
+			_back.UnlockBits(data);
+
+			_back.Dispose();
+			_fore.Dispose();
+			return;
+			for (int i = 0; i < imageHeight; i++)
+			{
                 for (int j = 0; j < imageWidth; j++)
                 {
                     int index = (i * imageWidth + j) * 4;
@@ -279,7 +273,11 @@ namespace REWD.FoundationR
                     Pixel back = new Pixel(buffer[bufferIndex], buffer[bufferIndex + 1], buffer[bufferIndex + 2], buffer[bufferIndex + 3]);
                     Pixel fore = new Pixel(image[Math.Min(index, image.Length - 1)], image[Math.Min(index + 1, image.Length - 1)], image[Math.Min(index + 2, image.Length - 1)], image[Math.Min(index + 3, image.Length - 1)]);
 
-                    fore.Composite(back);
+					if (back.color != Color.FromArgb(0, 0, 0, 0))
+					{
+						fore.Composite(back);
+					}   else 
+					{ }
 
                     buffer[bufferIndex]     = fore.B;
                     buffer[bufferIndex + 1] = fore.G;
@@ -457,7 +455,7 @@ namespace REWD.FoundationR
 		}
 		public static void HandleFile(string outpath, string inpath, int bpp)
 		{
-			Bitmap bitmap = (Bitmap)Bitmap.FromFile(inpath);
+			Bitmap bitmap = (System.Drawing.Bitmap)System.Drawing.Bitmap.FromFile(inpath);
 			REW result = REW.Extract(bitmap, (short)bpp);
 			FileStream fs = default;
 			try
@@ -597,11 +595,11 @@ namespace REWD.FoundationR
 					Pixel pixel = default;
 					if (NumChannels == 4)
 					{
-						pixel = new Pixel(c.B, c.G, c.R, c.A);
+						pixel = new Pixel(c.A, c.R, c.G, c.B);
 					}
 					else
 					{
-						pixel = new Pixel(c.B, c.G, c.R);
+						pixel = new Pixel(c.R, c.G, c.B);
 					}
 					data.AppendPixel(num * NumChannels + HeaderOffset, pixel);
 					pixel = null;
@@ -702,16 +700,16 @@ namespace REWD.FoundationR
 			}
 			if (NumChannels == 4)
 			{
-				data[Math.Min(data.Length - 1, whoAmI * 4 + HeaderOffset)] = color.B;
-				data[Math.Min(data.Length - 1, whoAmI * 4 + HeaderOffset + 1)] = color.G;
-				data[Math.Min(data.Length - 1, whoAmI * 4 + HeaderOffset + 2)] = color.R;
-				data[Math.Min(data.Length - 1, whoAmI * 4 + HeaderOffset + 3)] = color.A;
+				data[Math.Min(data.Length - 1, whoAmI * 4 + HeaderOffset)] = color.A;
+				data[Math.Min(data.Length - 1, whoAmI * 4 + HeaderOffset + 1)] = color.R;
+				data[Math.Min(data.Length - 1, whoAmI * 4 + HeaderOffset + 2)] = color.G;
+				data[Math.Min(data.Length - 1, whoAmI * 4 + HeaderOffset + 3)] = color.B;
 			}
 			else
 			{
-				data[Math.Min(data.Length - 1, whoAmI * 3 + HeaderOffset)] = color.B;
+				data[Math.Min(data.Length - 1, whoAmI * 3 + HeaderOffset)] = color.R;
 				data[Math.Min(data.Length - 1, whoAmI * 3 + HeaderOffset + 1)] = color.G;
-				data[Math.Min(data.Length - 1, whoAmI * 3 + HeaderOffset + 2)] = color.R;
+				data[Math.Min(data.Length - 1, whoAmI * 3 + HeaderOffset + 2)] = color.B;
 			}
 		}
 	}
@@ -774,11 +772,11 @@ namespace REWD.FoundationR
 			A = color.A; //B
 		}
 		public byte A = 255, R, G, B;
-		public virtual byte[] Buffer => hasAlpha ? new byte[] { B, G, R, A } : new byte[] { B, G, R };
-		public virtual Color color => Color.FromArgb(B, G, R, A);
+		public virtual byte[] Buffer => hasAlpha ? new byte[] { A, R, G, B } : new byte[] { R, G, B };
+		public virtual Color color => Color.FromArgb(A, R, G, B);
 		public override string ToString()
 		{
-			return $"\"RGBA=({B}, {G}, {R}, {A})\"";
+			return $"\"ARGB=({A}, {R}, {G}, {B})\"";
 		}
 	}
 	public struct Point16
@@ -855,16 +853,16 @@ namespace REWD.FoundationR
 		{
 			if (i.hasAlpha)
 			{
-				array[index] = i.B;
-				array[index + 1] = i.G;
-				array[index + 2] = i.R;
-				array[index + 3] = i.A;
+				array[index]	 = i.A;
+				array[index + 1] = i.R;
+				array[index + 2] = i.G;
+				array[index + 3] = i.B;
 			}
 			else
 			{
-				array[index] = i.B;
+				array[index]	 = i.R;
 				array[index + 1] = i.G;
-				array[index + 2] = i.R;
+				array[index + 2] = i.B;
 			}
 			return array;
 		}
@@ -872,16 +870,16 @@ namespace REWD.FoundationR
 		{
 			if (i.hasAlpha)
 			{
-				array[index] = i.B;
-				array[index + 1] = i.G;
-				array[index + 2] = i.R;
-				array[index + 3] = i.A;
+				array[index]	 = i.A;
+				array[index + 1] = i.R;
+				array[index + 2] = i.G;
+				array[index + 3] = i.B;
 			}
 			else
 			{
-				array[index] = i.B;
+				array[index]	 = i.R;
 				array[index + 1] = i.G;
-				array[index + 2] = i.R;
+				array[index + 2] = i.B;
 			}
 			return array;
 		}
@@ -1154,7 +1152,7 @@ namespace REWD.FoundationR
 			byte r = (byte)(color.R * amount + foreColor.R * (1 - amount));
 			byte g = (byte)(color.G * amount + foreColor.G * (1 - amount));
 			byte b = (byte)(color.B * amount + foreColor.B * (1 - amount));
-			return Color.FromArgb(b, g, r, a);
+			return Color.FromArgb(b, g, r, color.A == 255 ? 255 : a);
 		}
 		[Obsolete("Transforms the textures into something chaotic.")]
 		public static Color AlphaBlend(this Color argb, Color blend)
