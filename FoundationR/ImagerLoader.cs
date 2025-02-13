@@ -13,10 +13,13 @@ using System.Windows.Forms;
 using System.Windows.Forms.Design.Behavior;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using System.Xml.XPath;
 using static System.Net.Mime.MediaTypeNames;
 using static System.Windows.Forms.DataFormats;
 using Color = System.Drawing.Color;
+using ColorConverter = System.Drawing.ColorConverter;
 using Font = System.Drawing.Font;
+using FontStyle = System.Drawing.FontStyle;
 using MessageBox = System.Windows.Forms.MessageBox;
 using MessageBoxButtons = System.Windows.Forms.MessageBoxButtons;
 using PixelFormat = System.Windows.Media.PixelFormat;
@@ -180,7 +183,7 @@ namespace REWD.FoundationR
 				PointF point = new PointF(10, 10);
 				graphics.DrawString(text, _font, brush, point);
 
-				Draw(REW.Extract(image, 32), x, y);
+				Draw(REW.Extract(image, 32, 0), x, y);
 			}
 		}
 		public virtual void DrawString(string font, string text, int x, int y, int width, int height, Color color, float emSize)
@@ -194,7 +197,26 @@ namespace REWD.FoundationR
 				PointF point = new PointF(10, 10);
 				graphics.DrawString(text, _font, brush, point);
 
-				Draw(REW.Extract(image, 32), x, y);
+				Draw(REW.Extract(image, 32, 0), x, y);
+			}
+		}
+		public virtual void DrawString(string font, string text, int x, int y, int width, int height, string color, float emSize, StringFormat sf)
+		{
+			Bitmap image = new Bitmap(width, height);
+
+			var _sf = sf;
+			sf.Alignment = StringAlignment.Center;
+			sf.LineAlignment = StringAlignment.Center;
+
+			var _font = new Font(font, emSize, FontStyle.Bold, GraphicsUnit.Pixel);
+			using (var graphics = Graphics.FromImage(image))
+			{
+				graphics.Clear((Color)new ColorConverter().ConvertFromString("#" + color));
+				graphics.SmoothingMode = SmoothingMode.AntiAlias;
+				graphics.TextRenderingHint = TextRenderingHint.ClearTypeGridFit;
+				graphics.DrawString(text, _font, new SolidBrush(Color.Black), new RectangleF(0, 0, width, height), sf);
+
+				Draw(REW.Extract(image, 32, 0), x, y);
 			}
 		}
 
@@ -621,7 +643,7 @@ namespace REWD.FoundationR
 				}
 			}
 		}
-		public static REW Extract(Bitmap bitmap, short bitsPerPixel, int headerOffset = 10, int pixelArrayOffset = 54)
+		public static REW Extract(Bitmap bitmap, short bitsPerPixel, int pixelArrayOffset, int headerOffset = 10)
 		{
 			PixelFormat format = default;
 			System.Drawing.Imaging.PixelFormat bmpf = default;
@@ -640,14 +662,43 @@ namespace REWD.FoundationR
 
 			result.Width = (short)bitmap.Width;
 			result.Height = (short)bitmap.Height;
-			result.data = new byte[bitmap.Width * bitmap.Height * result.NumChannels + headerOffset + 12];
+			result.data = new byte[bitmap.Width * bitmap.Height * result.NumChannels + headerOffset];
 			result.data.AddHeader(new Point16(result.Width, result.Height), bitmap.Width * bitmap.Height * result.NumChannels + headerOffset, result.BitsPerPixel);
 
 			BitmapData data = bitmap.LockBits(new Rectangle(0, 0, bitmap.Width, bitmap.Height), ImageLockMode.ReadOnly, bmpf);
-			Marshal.Copy(data.Scan0, result.data, headerOffset, bitmap.Width * bitmap.Height * 4);
+			Marshal.Copy(data.Scan0, result.data, headerOffset, bitmap.Width * bitmap.Height * result.NumChannels);
 
 			bitmap.UnlockBits(data);
 			bitmap.Dispose();
+			return result;
+		}
+		public static REW Extract(Bitmap bitmap, short bitsPerPixel)
+		{
+			PixelFormat format = default;
+			System.Drawing.Imaging.PixelFormat bmpf = default;
+			if (bitsPerPixel == 32)
+			{
+				format = PixelFormats.Bgr32;
+				bmpf = System.Drawing.Imaging.PixelFormat.Format32bppArgb;
+			}
+			else
+			{
+				format = PixelFormats.Bgr24;
+				bmpf = System.Drawing.Imaging.PixelFormat.Format24bppRgb;
+			}
+
+			REW result = REW.CreateEmpty(bitmap.Width, bitmap.Height, format);
+
+			result.Width = (short)bitmap.Width;
+			result.Height = (short)bitmap.Height;
+			result.data = new byte[bitmap.Width * bitmap.Height * result.NumChannels];
+
+			BitmapData data = bitmap.LockBits(new Rectangle(0, 0, bitmap.Width, bitmap.Height), ImageLockMode.ReadOnly, bmpf);
+			Marshal.Copy(data.Scan0, result.data, 0, result.data.Length);
+
+			bitmap.UnlockBits(data);
+			bitmap.Dispose();
+
 			return result;
 		}
 		public virtual void Write(BinaryWriter w)
