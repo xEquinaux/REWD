@@ -2,7 +2,9 @@
 using System.Diagnostics;
 using System.Numerics;
 using System.Runtime.InteropServices;
+using System.Windows.Input;
 using System.Windows.Threading;
+using MouseEventArgs = System.Windows.Forms.MouseEventArgs;
 
 namespace REWD.FoundationR
 {
@@ -24,6 +26,8 @@ namespace REWD.FoundationR
             Start(new Surface(sx, sy, w, y, title, bpp), noBorder);
         }
 
+        public static bool MouseLeft;
+        public static bool MouseRight;
         bool flag = true, flag2 = true, init, init2;
         public static int offX, offY;
         public static Rectangle bounds;
@@ -118,8 +122,36 @@ namespace REWD.FoundationR
                     }
                 }
             }
+			window.form.MouseDown += Form_MouseDown;
+			window.form.MouseUp += Form_MouseUp;
             window.form.ShowDialog();
         }
+
+        public static bool KeyDown(Key k)
+        {
+            return Keyboard.IsKeyDown(k);
+        }
+
+        public static bool KeyUp(Key k)
+        {
+            return Keyboard.IsKeyUp(k);
+        }
+
+		private void Form_MouseDown(object? sender, MouseEventArgs e)
+		{
+			if (e.Button == MouseButtons.Left)
+                MouseLeft = true;
+            if (e.Button == MouseButtons.Right)
+                MouseRight = true;
+		}
+
+		private void Form_MouseUp(object? sender, MouseEventArgs e)
+		{
+			if (e.Button == MouseButtons.Left)
+                MouseLeft = false;
+            if (e.Button == MouseButtons.Right)
+                MouseRight = false;
+		}
 
 		public virtual void FormClosed(object sender, FormClosedEventArgs e)
 		{
