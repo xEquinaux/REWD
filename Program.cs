@@ -13,7 +13,7 @@ namespace REWD
 	{
 		static void Main(string[] args)
 		{
-			new Foundation(0, 0, 800, 600, "Demo", 32);
+			new Foundation(0, 0, 800, 600, "Demo", 32, true);
 		}
 	}
 }

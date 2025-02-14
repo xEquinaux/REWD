@@ -194,7 +194,7 @@ namespace REWD.FoundationR
 				graphics.TextRenderingHint = System.Drawing.Text.TextRenderingHint.AntiAlias;
 				Font _font = new Font("Arial", emSize);
 				SolidBrush brush = new SolidBrush(color);
-				PointF point = new PointF(10, 10);
+				PointF point = new PointF(x, y);
 				graphics.DrawString(text, _font, brush, point);
 
 				Draw(REW.Extract(image, 32, 0), x, y);
@@ -239,6 +239,8 @@ namespace REWD.FoundationR
 				AlphaMask = 0xFF000000,
 				CSType = BitConverter.ToUInt32(new byte[] { 32, 110, 106, 87 }, 0)
 			};
+			if (hdc == IntPtr.Zero)
+				return;
 			backBuffer = FlipVertically(backBuffer, RewBatch.width, RewBatch.height);
 			GCHandle h = GCHandle.Alloc(bmih, GCHandleType.Pinned);
 			GCHandle h2 = GCHandle.Alloc(BlendFrames(oldBackBuffer, backBuffer, 0f), GCHandleType.Pinned);

@@ -19,9 +19,9 @@ namespace REWD.FoundationR
         [DllImport("user32.dll")]
         static extern IntPtr GetWindowDC(IntPtr hWnd);
 
-        public Foundation(int sx, int sy, int w, int y, string title, int bpp)
+        public Foundation(int sx, int sy, int w, int y, string title, int bpp, bool noBorder)
         {
-            Start(new Surface(sx, sy, w, y, title, bpp));
+            Start(new Surface(sx, sy, w, y, title, bpp), noBorder);
         }
 
         bool flag = true, flag2 = true, init, init2;

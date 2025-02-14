@@ -13,7 +13,7 @@ namespace REWD.Foundation_GameTemplate
 {
 	public class Template : Foundation
 	{
-		public Template(int sx, int sy, int w, int y, string title, int bpp) : base(sx, sy, w, y, title, bpp)
+		public Template(int sx, int sy, int w, int y, string title, int bpp, bool noBorder) : base(sx, sy, w, y, title, bpp, noBorder)
 		{
 			Start(new Surface(sx, sy, w, y, title, bpp));
 		}
