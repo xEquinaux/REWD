@@ -14,7 +14,7 @@ namespace REWD
 	{
 		static void Main(string[] args)
 		{
-			new Direct2D();
+			new Game();
 			while (Console.ReadLine() != "exit");
 			Environment.Exit(1);
 			//new Foundation(0, 0, 800, 600, "Demo", 32, true);
