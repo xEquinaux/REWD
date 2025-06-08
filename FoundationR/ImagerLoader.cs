@@ -172,13 +172,14 @@ namespace REWD.FoundationR
 			CompositeImage(backBuffer, RewBatch.width, RewBatch.height, image.GetPixels(), image.Width, image.Height, x, y);
 		}
 
-		public virtual void DrawString(string font, string text, int x, int y, int width, int height)
+		public virtual void DrawString(string font, string text, int x, int y, int width, int height, float emSize = 12f, FontStyle style = FontStyle.Regular)
 		{
 			Bitmap image = new Bitmap(width, height);
+			image.MakeTransparent();
 			using (Graphics graphics = Graphics.FromImage(image))
 			{
 				graphics.TextRenderingHint = System.Drawing.Text.TextRenderingHint.AntiAlias;
-				Font _font = new Font("Arial", 12);
+				Font _font = new Font("Arial", emSize, style);
 				SolidBrush brush = new SolidBrush(Color.White);
 				PointF point = new PointF(10, 10);
 				graphics.DrawString(text, _font, brush, point);
@@ -186,13 +187,14 @@ namespace REWD.FoundationR
 				Draw(REW.Extract(image, 32, 0), x, y);
 			}
 		}
-		public virtual void DrawString(string font, string text, int x, int y, int width, int height, Color color, float emSize)
+		public virtual void DrawString(string font, string text, int x, int y, int width, int height, Color color, float emSize, FontStyle style = FontStyle.Regular)
 		{
 			Bitmap image = new Bitmap(width, height);
+			image.MakeTransparent();
 			using (Graphics graphics = Graphics.FromImage(image))
 			{
 				graphics.TextRenderingHint = System.Drawing.Text.TextRenderingHint.AntiAlias;
-				Font _font = new Font("Arial", emSize);
+				Font _font = new Font("Arial", emSize, style);
 				SolidBrush brush = new SolidBrush(color);
 				PointF point = new PointF(x, y);
 				graphics.DrawString(text, _font, brush, point);
@@ -213,7 +215,7 @@ namespace REWD.FoundationR
 			{
 				graphics.Clear((Color)new ColorConverter().ConvertFromString("#" + color));
 				graphics.SmoothingMode = SmoothingMode.AntiAlias;
-				graphics.TextRenderingHint = TextRenderingHint.ClearTypeGridFit;
+				graphics.TextRenderingHint = TextRenderingHint.AntiAlias;
 				graphics.DrawString(text, _font, new SolidBrush(Color.Black), new RectangleF(0, 0, width, height), sf);
 
 				Draw(REW.Extract(image, 32, 0), x, y);
@@ -606,7 +608,7 @@ namespace REWD.FoundationR
 					Pixel pixel = default;
 					if (rew.NumChannels == 4)
 					{
-						pixel = new Pixel(color.B, color.G, color.R, color.A);
+						pixel = new Pixel(color.A, color.R, color.G, color.B);
 					}
 					else
 					{

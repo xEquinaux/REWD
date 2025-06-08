@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace REWD.Foundation_GameTemplate
 {
-    internal class Asset
+    public class Asset
     {
         public static REW LoadFromFile(string path)
         {

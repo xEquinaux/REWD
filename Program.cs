@@ -6,6 +6,7 @@ using REWD.FoundationR;
 using static System.Windows.Forms.AxHost;
 using System.Windows.Media.Media3D;
 using Color = System.Drawing.Color;
+using REWD.D2D;
 
 namespace REWD
 {
@@ -13,7 +14,10 @@ namespace REWD
 	{
 		static void Main(string[] args)
 		{
-			new Foundation(0, 0, 800, 600, "Demo", 32, true);
+			new Direct2D();
+			while (Console.ReadLine() != "exit");
+			Environment.Exit(1);
+			//new Foundation(0, 0, 800, 600, "Demo", 32, true);
 		}
 	}
 }
