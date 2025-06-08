@@ -95,11 +95,13 @@ public class Direct2D
 
         // Dispose resources
         renderTarget.Dispose();
+        renderTarget2.Dispose();
         backBuffer.Dispose();
         swapChain.Dispose();
         device.Dispose();
         factory.Dispose();
         wicFactory.Dispose();
+        deviceContext.Dispose();
     }
 
     public virtual void Draw(DeviceContext rt)
