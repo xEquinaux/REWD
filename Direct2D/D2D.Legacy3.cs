@@ -1,12 +1,17 @@
-﻿using SharpDX.Direct2D1;
+﻿using SharpDX;
+using SharpDX.Direct2D1;
+using SharpDX.Direct3D;
 using SharpDX.Direct3D11;
 using SharpDX.DXGI;
 using SharpDX.Mathematics.Interop;
 using SharpDX.WIC;
 using SharpDX.Windows;
+using System;
+using System.Windows.Forms;
+using System.Windows.Media.Media3D;
 using DeviceContext = SharpDX.Direct2D1.DeviceContext;
 
-namespace REWD.D2D;
+namespace REWD.D2D.Legacy3;
 
 public class Direct2D
 {
@@ -14,10 +19,11 @@ public class Direct2D
 
     public Direct2D(int width, int height)
     {
+        LoadResources();
+
         var form = new RenderForm("SharpDX Render Window");
 		form.ClientSize = new System.Drawing.Size(width, height);
 
-        LoadResources();
         Initialize();
 
         // Initialize Direct2D Factory
@@ -61,14 +67,6 @@ public class Direct2D
             BitmapOptions.Target | BitmapOptions.CannotDraw
         );
 
-        Task.Run(() =>
-        {
-            for (int i = 0; ; )
-            {
-                Update();
-            }
-        });
-
         // Initialize device context
         deviceContext = new SharpDX.Direct2D1.DeviceContext(device, SharpDX.Direct2D1.DeviceContextOptions.None);
 
@@ -77,6 +75,14 @@ public class Direct2D
         
         // Set it as the active target
         deviceContext.Target = renderTarget2;
+
+        Task.Run(() =>
+        {
+            while (true)
+            {
+                Update();
+            }
+        });
 
         RenderLoop.Run(form, () =>
 	    {
@@ -112,13 +118,52 @@ public class Direct2D
     public virtual void Draw(DeviceContext rt)
     {
     }
-    public virtual void Initialize()
+    public virtual void Update()
     {
     }
     public virtual void LoadResources()
     {
     }
-    public virtual void Update()
+    public virtual void Initialize()
     {
+    }
+}
+
+public class Game : Direct2D
+{
+    public Game() : base (800, 600)
+    {
+    }
+
+	public override void Draw(DeviceContext rt)
+	{
+        using (System.Drawing.Bitmap bmp = new System.Drawing.Bitmap(100, 100))
+        { 
+            using (System.Drawing.Graphics g = Graphics.FromImage(bmp))
+            { 
+                g.FillRectangle(System.Drawing.Brushes.Red, new Rectangle(100, 100, 100, 100));
+                var image = ConvertBitmap(bmp, deviceContext);
+		        rt.DrawBitmap(image, 1f, SharpDX.Direct2D1.BitmapInterpolationMode.NearestNeighbor);
+                image.Dispose();
+            }
+        }
+	}
+
+    private SharpDX.Direct2D1.Bitmap ConvertBitmap(System.Drawing.Bitmap bitmap, SharpDX.Direct2D1.DeviceContext deviceContext)
+    {
+        var bitmapProperties = new SharpDX.Direct2D1.BitmapProperties(
+            new SharpDX.Direct2D1.PixelFormat(SharpDX.DXGI.Format.B8G8R8A8_UNorm, SharpDX.Direct2D1.AlphaMode.Premultiplied));
+
+        var bitmapData = bitmap.LockBits(
+            new System.Drawing.Rectangle(0, 0, bitmap.Width, bitmap.Height),
+            System.Drawing.Imaging.ImageLockMode.ReadOnly,
+            System.Drawing.Imaging.PixelFormat.Format32bppPArgb);
+
+        using (var dataStream = new SharpDX.DataStream(bitmapData.Scan0, bitmapData.Stride * bitmap.Height, true, false))
+        {
+            var sharpDxBitmap = new SharpDX.Direct2D1.Bitmap(deviceContext, new Size2(bitmap.Width, bitmap.Height), dataStream, bitmapData.Stride, bitmapProperties);
+            bitmap.UnlockBits(bitmapData);
+            return sharpDxBitmap;
+        }
     }
 }
